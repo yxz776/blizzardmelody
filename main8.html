@@ -1,0 +1,2204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>风雪音律--仅需一分钟吃到印象曲</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome 图标 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .auction-card {
+            transition: transform 0.2s;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .auction-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .bid-input {
+            max-width: 120px;
+        }
+
+        .category-badge {
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .category-badge:hover {
+            background-color: #0d6efd !important;
+            color: white !important;
+            transform: scale(1.05);
+        }
+
+        .card-img-container {
+            height: 200px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f8f9fa;
+        }
+
+        .card-img-placeholder {
+            font-size: 4rem;
+            color: #6c757d;
+        }
+
+        .timer-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 10;
+        }
+
+        .card-img-overlay {
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+        }
+
+        .stats-card {
+            border-left: 4px solid #0d6efd;
+        }
+
+        .footer {
+            background: linear-gradient(135deg, #2c3e50, #1a2530);
+            color: white;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+
+        /* 消息通知样式 */
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1050;
+            max-width: 350px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* 聊天室样式 */
+        .chat-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 350px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            background-color: white;
+            z-index: 1040;
+        }
+
+        .chat-header {
+            padding: 10px 15px;
+            background-color: #0d6efd;
+            color: white;
+            border-radius: 10px 10px 0 0;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-messages {
+            height: 300px;
+            overflow-y: auto;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .chat-message {
+            margin-bottom: 15px;
+            max-width: 80%;
+        }
+
+        .chat-message.sent {
+            margin-left: auto;
+        }
+
+        .chat-message .message-content {
+            padding: 8px 12px;
+            border-radius: 18px;
+        }
+
+        .chat-message.received .message-content {
+            background-color: #f1f1f1;
+        }
+
+        .chat-message.sent .message-content {
+            background-color: #0d6efd;
+            color: white;
+        }
+
+        .chat-input {
+            padding: 10px;
+            display: flex;
+            gap: 5px;
+        }
+
+        .chat-input input {
+            flex: 1;
+        }
+
+        .user-tag {
+            color: #0d6efd;
+            font-weight: bold;
+        }
+
+        .login-modal .modal-dialog {
+            max-width: 400px;
+        }
+
+        .unread-count {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: red;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+        }
+
+        .mentioned {
+            background-color: #e7f1ff;
+            padding: 0 3px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+
+        .reply-indicator {
+            font-size: 0.8em;
+            color: #666;
+            margin-bottom: 4px;
+            padding-left: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-gavel me-2"></i>风雪音律
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" onclick="showAllAuctions()">
+                            <i class="fas fa-home me-1"></i> 首页
+                        </a>
+                    </li>
+                    <li class="nav-item" id="addAuctionNavItem" style="display: none;">
+                        <a class="nav-link" href="#" onclick="showAddAuctionForm()">
+                            <i class="fas fa-plus-circle me-1"></i> 发布拍卖
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://blizzard-sign.mysxl.cn/">
+                            <i class="fas fa-history me-1"></i> 签约曲师报名
+                        </a>
+                    </li>
+                </ul>
+                <div class="d-flex align-items-center gap-2">
+                    <input class="form-control me-2" type="search" placeholder="搜索拍卖品..." id="searchInput"
+                        onkeyup="searchAuctions()">
+                    <button class="btn btn-outline-light" onclick="searchAuctions()">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <div class="dropdown">
+                        <button class="btn btn-outline-light dropdown-toggle" type="button" id="userMenuButton"
+                            data-bs-toggle="dropdown" aria-expanded="false" style="display: none;">
+                            <i class="fas fa-user me-1"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenuButton">
+                            <li><a class="dropdown-item" href="#" onclick="showMyAuctions()">我的拍卖</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="showMyBids()">我的出价</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="showNotifications()">通知</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item" href="#" onclick="logout()">退出登录</a></li>
+                        </ul>
+                    </div>
+                    <button class="btn btn-outline-light" id="loginButton" onclick="showLoginModal()">
+                        <i class="fas fa-sign-in-alt me-1"></i> 登录
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 统计信息 -->
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-3 mb-4">
+                <div class="card stats-card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">总拍卖数</h5>
+                        <p class="display-6" id="totalAuctions">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="card stats-card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">活跃拍卖</h5>
+                        <p class="display-6" id="activeAuctions">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="card stats-card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">总出价数</h5>
+                        <p class="display-6" id="totalBids">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="card stats-card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">最高出价</h5>
+                        <p class="display-6" id="highestBid">¥0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="container mt-4">
+        <!-- 分类筛选区 -->
+        <div class="mb-4">
+            <h5><i class="fas fa-tags"></i> 分类筛选</h5>
+            <div id="categoryFilters" class="d-flex flex-wrap gap-2">
+                <!-- 分类将通过JS动态生成 -->
+            </div>
+        </div>
+
+        <!-- 拍卖品展示区 -->
+        <div id="auctionsContainer" class="row">
+            <!-- 拍卖品将通过JS动态生成 -->
+        </div>
+
+        <!-- 上传拍卖品表单 (默认隐藏) -->
+        <div id="addAuctionForm" class="card mb-4" style="display: none;">
+            <div class="card-header bg-primary text-white">
+                <h5><i class="fas fa-upload"></i> 上传拍卖品</h5>
+            </div>
+            <div class="card-body">
+                <form id="newAuctionForm">
+                    <div class="mb-3">
+                        <label for="auctionTitle" class="form-label">拍卖品名称</label>
+                        <input type="text" class="form-control" id="auctionTitle" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="auctionDescription" class="form-label">描述</label>
+                        <textarea class="form-control" id="auctionDescription" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="auctionCategory" class="form-label">分类</label>
+                        <select class="form-select" id="auctionCategory" required>
+                            <option value="">选择分类</option>
+                            <option value="电子">电子</option>
+                            <option value="管弦乐/史诗">管弦乐/史诗</option>
+                            <option value="流行/摇滚">流行/摇滚</option>
+                            <option value="直录印象曲">直录印象曲</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="auctionVideoLink" class="form-label">视频链接</label>
+                        <input type="text" class="form-control" id="auctionVideoLink" placeholder="请输入链接" required>
+                        <div class="form-text">请确保链接设置为永久有效并可访问</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="auctionStartingPrice" class="form-label">起拍价 (元)</label>
+                        <input type="number" class="form-control" id="auctionStartingPrice" min="0" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="auctionEndDate" class="form-label">截止日期</label>
+                        <input type="date" class="form-control" id="auctionEndDate" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">提交拍卖品</button>
+                    <button type="button" class="btn btn-secondary" onclick="hideAddAuctionForm()">取消</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 拍卖详情模态框 -->
+    <div class="modal fade" id="auctionDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="detailModalTitle">拍卖品详情</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="auctionDetailContent">
+                        <!-- 详情内容将通过JS动态生成 -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 出价模态框 -->
+    <div class="modal fade" id="bidModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">出价</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="bidAuctionId">
+                    <div class="mb-3">
+                        <label for="bidAmount" class="form-label">出价金额 (元)</label>
+                        <input type="number" class="form-control" id="bidAmount" min="0">
+                    </div>
+                    <div class="mb-3">
+                        <label for="bidderName" class="form-label">您的姓名</label>
+                        <input type="text" class="form-control" id="bidderName" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="bidderContact" class="form-label">联系方式 (电话/邮箱)</label>
+                        <input type="text" class="form-control" id="bidderContact">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="submitBid()">提交出价</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 登录模态框 -->
+    <div class="modal fade login-modal" id="loginModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">用户登录</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">用户名</label>
+                            <input type="text" class="form-control" id="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">密码</label>
+                            <input type="password" class="form-control" id="password" required>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="rememberMe">
+                            <label class="form-check-label" for="rememberMe">记住我</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary">登录</button>
+                        <button type="button" class="btn btn-secondary" onclick="switchToRegister()">注册</button>
+                    </form>
+                    <form id="registerForm" style="display: none;">
+                        <div class="mb-3">
+                            <label for="regUsername" class="form-label">用户名</label>
+                            <input type="text" class="form-control" id="regUsername" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="regPassword" class="form-label">密码</label>
+                            <input type="password" class="form-control" id="regPassword" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="regEmail" class="form-label">邮箱</label>
+                            <input type="email" class="form-control" id="regEmail" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">注册</button>
+                        <button type="button" class="btn btn-secondary" onclick="switchToLogin()">返回登录</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通知模态框 -->
+    <div class="modal fade" id="notificationsModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">我的通知</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="notificationsList" class="list-group">
+                        <!-- 通知将通过JS动态生成 -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button type="button" class="btn btn-primary" onclick="markAllAsRead()">全部标为已读</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 聊天室 -->
+    <div class="chat-container" id="chatContainer" style="display: none;">
+        <div class="chat-header" onclick="toggleChat()">
+            <h6 class="mb-0"><i class="fas fa-comments me-2"></i> 聊天室</h6>
+            <div style="position: relative;">
+                <i class="fas fa-bell"></i>
+                <span class="unread-count" id="chatUnreadCount" style="display: none;">0</span>
+            </div>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <!-- 聊天消息将通过JS动态生成 -->
+        </div>
+        <div class="chat-input">
+            <input type="text" class="form-control" id="chatMessageInput" placeholder="输入消息... @用户可以提及某人，回复消息请点击消息">
+            <button class="btn btn-primary" onclick="sendChatMessage()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <h5><i class="fas fa-gavel me-2"></i>风雪音律歌曲拍卖行</h5>
+                    <p class="mt-3">提供高品质印象曲在线拍卖服务，让您足不出户即可参与精彩拍卖。</p>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <h5>快速链接</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="#" class="text-white text-decoration-none">首页</a></li>
+                        <li class="mb-2"><a href="https://blizzard-sign.mysxl.cn/"
+                                class="text-white text-decoration-none">签约曲师报名</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <h5>联系我们</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><i class="fas fa-envelope me-2"></i> MirBlue_798174@163.com</li>
+                        <li class="mb-2"><i class="fas fa-phone me-2"></i> +86 13813147339</li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="bg-light">
+            <div class="text-center">
+                <p>&copy; 2025 BlizzardMusic.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 显示聊天室的按钮 -->
+    <button class="btn btn-primary" style="position: fixed; bottom: 20px; right: 20px; z-index: 1030;"
+        onclick="toggleChat()">
+        <i class="fas fa-comments"></i>
+    </button>
+
+    <!-- Bootstrap 5 JS 和 Popper.js -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // 全局变量
+        let auctions = [];
+        let categories = new Set();
+        let selectedCategory = null;
+        let currentUser = null;
+        let users = [];
+        let notifications = [];
+        let chatMessages = [];
+        let chatOpen = false;
+        let db; // IndexedDB数据库
+        let replyToMessageId = null; // 用于回复功能
+
+        // 初始化IndexedDB数据库 - 提升版本号到3以确保升级事件触发
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('AuctionDB', 3);
+
+                request.onupgradeneeded = function (event) {
+                    db = event.target.result;
+                    console.log('数据库升级，旧版本:', event.oldVersion, '新版本:', event.newVersion);
+
+                    // 创建用户表
+                    if (!db.objectStoreNames.contains('users')) {
+                        const usersStore = db.createObjectStore('users', { keyPath: 'id', autoIncrement: true });
+                        usersStore.createIndex('username', 'username', { unique: true });
+                        usersStore.createIndex('email', 'email', { unique: true });
+                    } else {
+                        // 确保索引存在
+                        const usersStore = event.target.transaction.objectStore('users');
+                        if (!usersStore.indexNames.contains('username')) {
+                            usersStore.createIndex('username', 'username', { unique: true });
+                        }
+                        if (!usersStore.indexNames.contains('email')) {
+                            usersStore.createIndex('email', 'email', { unique: true });
+                        }
+                    }
+
+                    // 创建拍卖品表
+                    if (!db.objectStoreNames.contains('auctions')) {
+                        const auctionsStore = db.createObjectStore('auctions', { keyPath: 'id', autoIncrement: true });
+                        auctionsStore.createIndex('sellerId', 'sellerId', { unique: false });
+                        auctionsStore.createIndex('category', 'category', { unique: false });
+                    } else {
+                        const auctionsStore = event.target.transaction.objectStore('auctions');
+                        if (!auctionsStore.indexNames.contains('sellerId')) {
+                            auctionsStore.createIndex('sellerId', 'sellerId', { unique: false });
+                        }
+                        if (!auctionsStore.indexNames.contains('category')) {
+                            auctionsStore.createIndex('category', 'category', { unique: false });
+                        }
+                    }
+
+                    // 创建出价表
+                    if (!db.objectStoreNames.contains('bids')) {
+                        const bidsStore = db.createObjectStore('bids', { keyPath: 'id', autoIncrement: true });
+                        bidsStore.createIndex('auctionId', 'auctionId', { unique: false });
+                        bidsStore.createIndex('bidderId', 'bidderId', { unique: false });
+                    } else {
+                        const bidsStore = event.target.transaction.objectStore('bids');
+                        if (!bidsStore.indexNames.contains('auctionId')) {
+                            bidsStore.createIndex('auctionId', 'auctionId', { unique: false });
+                        }
+                        if (!bidsStore.indexNames.contains('bidderId')) {
+                            bidsStore.createIndex('bidderId', 'bidderId', { unique: false });
+                        }
+                    }
+
+                    // 创建通知表
+                    if (!db.objectStoreNames.contains('notifications')) {
+                        const notificationsStore = db.createObjectStore('notifications', { keyPath: 'id', autoIncrement: true });
+                        notificationsStore.createIndex('recipientId', 'recipientId', { unique: false });
+                        notificationsStore.createIndex('read', 'read', { unique: false });
+                    } else {
+                        const notificationsStore = event.target.transaction.objectStore('notifications');
+                        if (!notificationsStore.indexNames.contains('recipientId')) {
+                            notificationsStore.createIndex('recipientId', 'recipientId', { unique: false });
+                        }
+                        if (!notificationsStore.indexNames.contains('read')) {
+                            notificationsStore.createIndex('read', 'read', { unique: false });
+                        }
+                    }
+
+                    // 创建聊天消息表
+                    if (!db.objectStoreNames.contains('chat_messages')) {
+                        const chatStore = db.createObjectStore('chat_messages', { keyPath: 'id', autoIncrement: true });
+                        chatStore.createIndex('timestamp', 'timestamp', { unique: false });
+                        chatStore.createIndex('senderId', 'senderId', { unique: false });
+                    } else {
+                        const chatStore = event.target.transaction.objectStore('chat_messages');
+                        if (!chatStore.indexNames.contains('timestamp')) {
+                            chatStore.createIndex('timestamp', 'timestamp', { unique: false });
+                        }
+                        if (!chatStore.indexNames.contains('senderId')) {
+                            chatStore.createIndex('senderId', 'senderId', { unique: false });
+                        }
+                    }
+
+                    // 创建聊天提及表
+                    if (!db.objectStoreNames.contains('chat_mentions')) {
+                        const mentionsStore = db.createObjectStore('chat_mentions', { keyPath: 'id', autoIncrement: true });
+                        mentionsStore.createIndex('messageId', 'messageId', { unique: false });
+                        mentionsStore.createIndex('userId', 'userId', { unique: false });
+                        mentionsStore.createIndex('read', 'read', { unique: false });
+                    } else {
+                        const mentionsStore = event.target.transaction.objectStore('chat_mentions');
+                        if (!mentionsStore.indexNames.contains('messageId')) {
+                            mentionsStore.createIndex('messageId', 'messageId', { unique: false });
+                        }
+                        if (!mentionsStore.indexNames.contains('userId')) {
+                            mentionsStore.createIndex('userId', 'userId', { unique: false });
+                        }
+                        if (!mentionsStore.indexNames.contains('read')) {
+                            mentionsStore.createIndex('read', 'read', { unique: false });
+                        }
+                    }
+                };
+
+                request.onsuccess = function (event) {
+                    db = event.target.result;
+                    console.log('数据库初始化成功');
+                    // 添加默认用户（如果不存在）
+                    checkAndAddDefaultUsers().then(resolve).catch(reject);
+                };
+
+                request.onerror = function (event) {
+                    console.error('数据库初始化失败:', event.target.error);
+                    alert('数据库初始化失败: ' + event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        // 通用的IndexedDB操作函数
+        function idbTransaction(storeName, mode, callback) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const transaction = db.transaction(storeName, mode);
+                    const store = transaction.objectStore(storeName);
+
+                    const result = callback(store);
+
+                    transaction.oncomplete = function () {
+                        resolve(result);
+                    };
+
+                    transaction.onerror = function () {
+                        console.error('事务错误:', transaction.error);
+                        reject(transaction.error);
+                    };
+                } catch (error) {
+                    console.error('事务创建失败:', error);
+                    reject(error);
+                }
+            });
+        }
+
+        // 检查索引是否存在的辅助函数
+        function indexExists(store, indexName) {
+            return store.indexNames.contains(indexName);
+        }
+
+        // 使用索引获取数据的安全函数
+        function getByIndex(storeName, indexName, key) {
+            return new Promise((resolve, reject) => {
+                idbTransaction(storeName, 'readonly', store => {
+                    return new Promise((resolveStore, rejectStore) => {
+                        if (!indexExists(store, indexName)) {
+                            rejectStore(new Error(`索引 ${indexName} 不存在于存储 ${storeName}`));
+                            return;
+                        }
+
+                        const index = store.index(indexName);
+                        const request = index.get(key);
+
+                        request.onsuccess = function () {
+                            resolveStore(request.result);
+                        };
+
+                        request.onerror = function () {
+                            rejectStore(request.error);
+                        };
+                    });
+                }).then(resolve).catch(reject);
+            });
+        }
+
+        // 使用索引获取所有数据的安全函数
+        function getAllByIndex(storeName, indexName, key) {
+            return new Promise((resolve, reject) => {
+                idbTransaction(storeName, 'readonly', store => {
+                    return new Promise((resolveStore, rejectStore) => {
+                        if (!indexExists(store, indexName)) {
+                            rejectStore(new Error(`索引 ${indexName} 不存在于存储 ${storeName}`));
+                            return;
+                        }
+
+                        const index = store.index(indexName);
+                        const request = key !== undefined ? index.getAll(key) : index.getAll();
+
+                        request.onsuccess = function () {
+                            resolveStore(request.result);
+                        };
+
+                        request.onerror = function () {
+                            rejectStore(request.error);
+                        };
+                    });
+                }).then(resolve).catch(reject);
+            });
+        }
+
+        // 检查并添加默认用户
+        function checkAndAddDefaultUsers() {
+            return new Promise((resolve, reject) => {
+                // 先检查是否已有用户
+                idbTransaction('users', 'readonly', store => {
+                    return new Promise((resolveStore, rejectStore) => {
+                        const request = store.count();
+                        request.onsuccess = function () {
+                            if (request.result === 0) {
+                                // 没有用户，添加默认用户
+                                const defaultUsers = [
+                                    { id: 1, username: 'admin', password: 'admin123', email: 'admin@example.com' },
+                                    { id: 2, username: 'user1', password: 'user123', email: 'user1@example.com' }
+                                ];
+
+                                // 使用读写事务添加用户
+                                idbTransaction('users', 'readwrite', usersStore => {
+                                    return new Promise((resolveAdd, rejectAdd) => {
+                                        let addedCount = 0;
+                                        defaultUsers.forEach(user => {
+                                            const request = usersStore.add(user);
+                                            request.onsuccess = () => {
+                                                addedCount++;
+                                                if (addedCount === defaultUsers.length) {
+                                                    resolveAdd();
+                                                }
+                                            };
+                                            request.onerror = rejectAdd;
+                                        });
+                                    });
+                                }).then(() => {
+                                    // 添加示例拍卖
+                                    return idbTransaction('auctions', 'readwrite', auctionsStore => {
+                                        return new Promise((resolveAuction, rejectAuction) => {
+                                            const exampleAuction = {
+                                                id: 1,
+                                                title: "试验拍卖1",
+                                                description: "无",
+                                                category: "音乐",
+                                                videoLink: "https://pan.baidu.com/s/1Yn683HPdAGakzgjVXgDPzw",
+                                                startingPrice: 12000,
+                                                endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                                                createdAt: new Date().toISOString(),
+                                                sellerId: 1,
+                                                sellerUsername: 'admin'
+                                            };
+                                            const request = auctionsStore.add(exampleAuction);
+                                            request.onsuccess = resolveAuction;
+                                            request.onerror = rejectAuction;
+                                        });
+                                    });
+                                }).then(() => {
+                                    // 添加示例出价
+                                    return idbTransaction('bids', 'readwrite', bidsStore => {
+                                        return new Promise((resolveBid, rejectBid) => {
+                                            const exampleBids = [
+                                                {
+                                                    id: 1, auctionId: 1, amount: 13500, bidderId: 2,
+                                                    bidderName: "user1", bidderContact: "13800138000",
+                                                    timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+                                                },
+                                                {
+                                                    id: 2, auctionId: 1, amount: 12800, bidderId: 2,
+                                                    bidderName: "user1", bidderContact: "lily@example.com",
+                                                    timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+                                                }
+                                            ];
+
+                                            let addedCount = 0;
+                                            exampleBids.forEach(bid => {
+                                                const request = bidsStore.add(bid);
+                                                request.onsuccess = () => {
+                                                    addedCount++;
+                                                    if (addedCount === exampleBids.length) {
+                                                        resolveBid();
+                                                    }
+                                                };
+                                                request.onerror = rejectBid;
+                                            });
+                                        });
+                                    });
+                                }).then(() => resolveStore(true))
+                                    .catch(err => rejectStore(err));
+                            } else {
+                                resolveStore(false);
+                            }
+                        };
+
+                        request.onerror = function () {
+                            rejectStore(request.error);
+                        };
+                    });
+                }).then(() => {
+                    console.log('检查并添加默认用户完成');
+                    resolve();
+                }).catch(err => {
+                    console.error('添加默认用户失败:', err);
+                    reject(err);
+                });
+            });
+        }
+
+        // 格式化日期函数
+        function formatDate(dateString) {
+            if (!dateString) return "未知日期";
+
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) {
+                return "无效日期";
+            }
+
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // 计算剩余时间
+        function getTimeRemaining(endDateString) {
+            const endDate = new Date(endDateString);
+            if (isNaN(endDate.getTime())) {
+                return "时间无效";
+            }
+
+            const now = new Date();
+            const diff = endDate - now;
+
+            if (diff <= 0) {
+                return "已结束";
+            }
+
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+            return `${days}天 ${hours}时 ${minutes}分`;
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function () {
+            // 初始化数据库
+            initDB().then(() => {
+                // 加载用户数据
+                loadUsers();
+                // 检查是否有记住的登录状态
+                checkRememberedLogin();
+                // 加载拍卖品
+                loadAuctions();
+                // 加载通知
+                loadNotifications();
+                // 加载聊天记录
+                loadChatMessages();
+                // 更新分类筛选器
+                updateCategoryFilters();
+                // 更新统计信息
+                updateStats();
+                // 更新聊天显示
+                renderChatMessages();
+
+                // 设置默认截止日期为7天后
+                const defaultEndDate = new Date();
+                defaultEndDate.setDate(defaultEndDate.getDate() + 7);
+                const formattedDate = defaultEndDate.toISOString().split('T')[0];
+                document.getElementById('auctionEndDate').value = formattedDate;
+
+                // 表单提交事件
+                document.getElementById('newAuctionForm').addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    addNewAuction();
+                });
+
+                // 登录表单提交事件
+                document.getElementById('loginForm').addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    login();
+                });
+
+                // 注册表单提交事件
+                document.getElementById('registerForm').addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    register();
+                });
+
+                // 聊天输入框回车发送消息
+                document.getElementById('chatMessageInput').addEventListener('keypress', function (e) {
+                    if (e.key === 'Enter') {
+                        sendChatMessage();
+                    }
+                });
+
+                // 定期刷新数据
+                setInterval(() => {
+                    if (currentUser) {
+                        loadAuctions();
+                        loadNotifications();
+                        loadChatMessages();
+                    }
+                }, 30000); // 每30秒刷新一次
+            }).catch(error => {
+                console.error('初始化失败:', error);
+                showToast('系统初始化失败，请刷新页面重试', 'danger');
+            });
+        });
+
+        // 从数据库加载用户
+        function loadUsers() {
+            return idbTransaction('users', 'readonly', store => {
+                return new Promise((resolve, reject) => {
+                    const request = store.getAll();
+                    request.onsuccess = function () {
+                        users = request.result;
+                        resolve(users);
+                    };
+                    request.onerror = function () {
+                        reject(request.error);
+                    };
+                });
+            }).then(() => {
+                console.log('用户数据加载完成');
+            }).catch(error => {
+                console.error('加载用户失败:', error);
+            });
+        }
+
+        // 从数据库加载拍卖品
+        function loadAuctions() {
+            return idbTransaction('auctions', 'readonly', store => {
+                return new Promise((resolve, reject) => {
+                    const request = store.getAll();
+                    request.onsuccess = function () {
+                        auctions = request.result;
+                        // 为每个拍卖品加载最高出价
+                        Promise.all(auctions.map(auction => {
+                            return getHighestBid(auction.id).then(highestBid => {
+                                auction.highestBid = highestBid;
+                                return auction;
+                            });
+                        })).then(auctionsWithBids => {
+                            auctions = auctionsWithBids;
+                            renderAuctions();
+                            updateCategoryFilters();
+                            updateStats();
+                            resolve(auctions);
+                        });
+                    };
+                    request.onerror = function () {
+                        reject(request.error);
+                    };
+                });
+            }).catch(error => {
+                console.error('加载拍卖品失败:', error);
+            });
+        }
+
+        // 获取拍卖品的最高出价
+        function getHighestBid(auctionId) {
+            return getAllByIndex('bids', 'auctionId', auctionId)
+                .then(bids => {
+                    if (bids.length === 0) return null;
+                    return bids.reduce((max, bid) => (bid.amount > max.amount) ? bid : max, bids[0]);
+                })
+                .catch(error => {
+                    console.error(`获取拍卖 ${auctionId} 的出价失败:`, error);
+                    return null;
+                });
+        }
+
+        // 渲染拍卖品列表
+        function renderAuctions(filteredAuctions = null) {
+            const container = document.getElementById('auctionsContainer');
+            const auctionsToRender = filteredAuctions ||
+                (selectedCategory ? auctions.filter(a => a.category === selectedCategory) : auctions);
+
+            container.innerHTML = '';
+
+            if (auctionsToRender.length === 0) {
+                container.innerHTML = `
+                    <div class="col-12 text-center py-5">
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">没有找到符合条件的拍卖品</p>
+                    </div>
+                `;
+                return;
+            }
+
+            auctionsToRender.forEach(auction => {
+                const timeRemaining = getTimeRemaining(auction.endDate);
+                const isEnded = timeRemaining === "已结束";
+                const highestBidAmount = auction.highestBid ? auction.highestBid.amount : auction.startingPrice;
+
+                const card = document.createElement('div');
+                card.className = 'col-md-4 mb-4';
+                card.innerHTML = `
+                    <div class="card auction-card h-100 position-relative">
+                        <span class="badge bg-${isEnded ? 'secondary' : 'danger'} timer-badge">
+                            ${isEnded ? '已结束' : `剩余: ${timeRemaining}`}
+                        </span>
+                        <div class="card-img-container">
+                            <i class="fas fa-music card-img-placeholder"></i>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">${auction.title}</h5>
+                            <p class="card-text text-truncate">${auction.description || '无描述'}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-secondary category-badge">${auction.category}</span>
+                                <span class="text-primary fw-bold">当前最高: ¥${highestBidAmount}</span>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent d-flex justify-content-between">
+                            <small class="text-muted">发布者: ${auction.sellerUsername}</small>
+                            <button class="btn btn-sm btn-primary" onclick="showAuctionDetails(${auction.id})">
+                                查看详情
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // 更新分类筛选器
+        function updateCategoryFilters() {
+            const container = document.getElementById('categoryFilters');
+            categories.clear();
+
+            auctions.forEach(auction => {
+                categories.add(auction.category);
+            });
+
+            // 添加"全部"选项
+            let html = `
+                <span class="badge bg-primary category-badge ${!selectedCategory ? 'bg-primary' : 'bg-light text-dark'}" 
+                      onclick="filterByCategory(null)">
+                    全部
+                </span>
+            `;
+
+            // 添加各个分类
+            Array.from(categories).forEach(category => {
+                html += `
+                    <span class="badge category-badge ${selectedCategory === category ? 'bg-primary' : 'bg-light text-dark'}" 
+                          onclick="filterByCategory('${category}')">
+                        ${category}
+                    </span>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // 按分类筛选拍卖品
+        function filterByCategory(category) {
+            selectedCategory = category;
+            renderAuctions();
+            updateCategoryFilters();
+        }
+
+        // 搜索拍卖品
+        function searchAuctions() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            if (!searchTerm) {
+                renderAuctions();
+                return;
+            }
+
+            const filtered = auctions.filter(auction =>
+                auction.title.toLowerCase().includes(searchTerm) ||
+                auction.description.toLowerCase().includes(searchTerm) ||
+                auction.category.toLowerCase().includes(searchTerm)
+            );
+
+            renderAuctions(filtered);
+        }
+
+        // 显示拍卖品详情
+        function showAuctionDetails(auctionId) {
+            const auction = auctions.find(a => a.id === auctionId);
+            if (!auction) return;
+
+            document.getElementById('detailModalTitle').textContent = auction.title;
+
+            // 获取该拍卖品的所有出价
+            getAllByIndex('bids', 'auctionId', auctionId)
+                .then(bids => {
+                    // 按时间排序，最新的在前面
+                    bids.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                    const highestBid = auction.highestBid;
+                    const timeRemaining = getTimeRemaining(auction.endDate);
+                    const isEnded = timeRemaining === "已结束";
+                    const isOwner = currentUser && auction.sellerId === currentUser.id;
+
+                    let bidsHtml = '';
+                    if (bids.length === 0) {
+                        bidsHtml = '<p class="text-muted">暂无出价</p>';
+                    } else {
+                        bids.forEach(bid => {
+                            bidsHtml += `
+                                <div class="card mb-2">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex justify-content-between">
+                                            <span class="fw-bold">${bid.bidderName}</span>
+                                            <span class="text-primary fw-bold">¥${bid.amount}</span>
+                                        </div>
+                                        <small class="text-muted">${formatDate(bid.timestamp)}</small>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }
+
+                    const detailContent = `
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <div class="card-img-container mb-3">
+                                    <i class="fas fa-music card-img-placeholder"></i>
+                                </div>
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6><i class="fas fa-link me-2"></i>视频链接</h6>
+                                        <a href="${auction.videoLink}" target="_blank" class="btn btn-outline-primary btn-sm">
+                                            查看视频
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <h6><i class="fas fa-info-circle me-2"></i>描述</h6>
+                                    <p>${auction.description || '无描述'}</p>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h6><i class="fas fa-tag me-2"></i>分类</h6>
+                                                <p>${auction.category}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h6><i class="fas fa-clock me-2"></i>剩余时间</h6>
+                                                <p class="${isEnded ? 'text-secondary' : 'text-danger'}">${timeRemaining}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h6><i class="fas fa-gavel me-2"></i>起拍价</h6>
+                                                <p>¥${auction.startingPrice}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h6><i class="fas fa-trophy me-2"></i>当前最高出价</h6>
+                                                <p class="text-primary fw-bold">
+                                                    ¥${highestBid ? highestBid.amount : auction.startingPrice}
+                                                </p>
+                                                ${highestBid ? `<small>由 ${highestBid.bidderName} 出价</small>` : ''}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <h6><i class="fas fa-user me-2"></i>发布者</h6>
+                                    <p>${auction.sellerUsername}</p>
+                                </div>
+                                ${!isOwner && !isEnded && currentUser ? `
+                                    <button class="btn btn-primary w-100" onclick="openBidModal(${auction.id})">
+                                        <i class="fas fa-hand-holding-usd me-1"></i> 我要出价
+                                    </button>
+                                ` : ''}
+                                ${isOwner ? `
+                                    <button class="btn btn-danger w-100" onclick="deleteAuction(${auction.id})">
+                                        <i class="fas fa-trash me-1"></i> 删除拍卖
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <h5><i class="fas fa-history me-2"></i>出价记录</h5>
+                            <div id="bidsList">
+                                ${bidsHtml}
+                            </div>
+                        </div>
+                    `;
+
+                    document.getElementById('auctionDetailContent').innerHTML = detailContent;
+
+                    // 显示模态框
+                    const modal = new bootstrap.Modal(document.getElementById('auctionDetailModal'));
+                    modal.show();
+                })
+                .catch(error => {
+                    console.error('获取出价记录失败:', error);
+                    showToast('获取出价记录失败', 'danger');
+                });
+        }
+
+        // 打开出价模态框
+        function openBidModal(auctionId) {
+            const auction = auctions.find(a => a.id === auctionId);
+            if (!auction || !currentUser) return;
+
+            document.getElementById('bidAuctionId').value = auctionId;
+            document.getElementById('bidderName').value = currentUser.username;
+
+            // 设置最小出价为当前最高出价 + 100
+            const currentHighest = auction.highestBid ? auction.highestBid.amount : auction.startingPrice;
+            document.getElementById('bidAmount').min = currentHighest + 100;
+            document.getElementById('bidAmount').value = currentHighest + 100;
+
+            // 显示模态框
+            const modal = new bootstrap.Modal(document.getElementById('bidModal'));
+            modal.show();
+        }
+
+        // 提交出价
+        function submitBid() {
+            if (!currentUser) {
+                showToast('请先登录', 'warning');
+                return;
+            }
+
+            const auctionId = parseInt(document.getElementById('bidAuctionId').value);
+            const amount = parseFloat(document.getElementById('bidAmount').value);
+            const bidderContact = document.getElementById('bidderContact').value;
+
+            if (!auctionId || !amount || !bidderContact) {
+                showToast('请填写完整信息', 'warning');
+                return;
+            }
+
+            const auction = auctions.find(a => a.id === auctionId);
+            if (!auction) {
+                showToast('拍卖品不存在', 'danger');
+                return;
+            }
+
+            // 检查是否已结束
+            if (getTimeRemaining(auction.endDate) === "已结束") {
+                showToast('该拍卖已结束', 'danger');
+                return;
+            }
+
+            // 检查是否是拍卖品所有者
+            if (auction.sellerId === currentUser.id) {
+                showToast('不能对自己的拍卖品出价', 'warning');
+                return;
+            }
+
+            // 检查出价是否高于当前最高价
+            const currentHighest = auction.highestBid ? auction.highestBid.amount : auction.startingPrice;
+            if (amount <= currentHighest) {
+                showToast(`出价必须高于当前最高价 ¥${currentHighest}`, 'warning');
+                return;
+            }
+
+            // 创建新出价
+            const newBid = {
+                auctionId,
+                amount,
+                bidderId: currentUser.id,
+                bidderName: currentUser.username,
+                bidderContact,
+                timestamp: new Date().toISOString()
+            };
+
+            // 保存出价到数据库
+            idbTransaction('bids', 'readwrite', store => {
+                return new Promise((resolve, reject) => {
+                    const request = store.add(newBid);
+                    request.onsuccess = function () {
+                        resolve(request.result);
+                    };
+                    request.onerror = function () {
+                        reject(request.error);
+                    };
+                });
+            }).then(bidId => {
+                console.log(`出价成功，ID: ${bidId}`);
+
+                // 创建通知给卖家
+                const notification = {
+                    recipientId: auction.sellerId,
+                    type: 'bid',
+                    title: '新的出价',
+                    message: `您的拍卖品"${auction.title}"收到了新的出价 ¥${amount}`,
+                    relatedId: auctionId,
+                    read: false,
+                    timestamp: new Date().toISOString()
+                };
+
+                // 保存通知
+                return idbTransaction('notifications', 'readwrite', store => {
+                    return new Promise((resolve, reject) => {
+                        const request = store.add(notification);
+                        request.onsuccess = resolve;
+                        request.onerror = reject;
+                    });
+                });
+            }).then(() => {
+                showToast('出价成功', 'success');
+                // 刷新拍卖品数据
+                loadAuctions();
+                // 关闭模态框
+                const modal = bootstrap.Modal.getInstance(document.getElementById('bidModal'));
+                modal.hide();
+                // 重置表单
+                document.getElementById('bidForm').reset();
+            }).catch(error => {
+                console.error('出价失败:', error);
+                showToast('出价失败，请重试', 'danger');
+            });
+        }
+
+        // 显示添加拍卖品表单
+        function showAddAuctionForm() {
+            if (!currentUser) {
+                showLoginModal();
+                return;
+            }
+
+            document.getElementById('auctionsContainer').style.display = 'none';
+            document.getElementById('addAuctionForm').style.display = 'block';
+        }
+
+        // 隐藏添加拍卖品表单
+        function hideAddAuctionForm() {
+            document.getElementById('addAuctionForm').style.display = 'none';
+            document.getElementById('auctionsContainer').style.display = 'flex';
+            document.getElementById('newAuctionForm').reset();
+        }
+
+        // 添加新拍卖品
+        function addNewAuction() {
+            if (!currentUser) {
+                showToast('请先登录', 'warning');
+                return;
+            }
+
+            const title = document.getElementById('auctionTitle').value;
+            const description = document.getElementById('auctionDescription').value;
+            const category = document.getElementById('auctionCategory').value;
+            const videoLink = document.getElementById('auctionVideoLink').value;
+            const startingPrice = parseFloat(document.getElementById('auctionStartingPrice').value);
+            const endDate = document.getElementById('auctionEndDate').value;
+
+            if (!title || !description || !category || !videoLink || !startingPrice || !endDate) {
+                showToast('请填写完整信息', 'warning');
+                return;
+            }
+
+            // 检查截止日期是否在未来
+            const endDateObj = new Date(endDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            if (endDateObj <= today) {
+                showToast('截止日期必须在今天之后', 'warning');
+                return;
+            }
+
+            // 创建新拍卖品
+            const newAuction = {
+                title,
+                description,
+                category,
+                videoLink,
+                startingPrice,
+                endDate: endDateObj.toISOString(),
+                createdAt: new Date().toISOString(),
+                sellerId: currentUser.id,
+                sellerUsername: currentUser.username
+            };
+
+            // 保存拍卖品到数据库
+            idbTransaction('auctions', 'readwrite', store => {
+                return new Promise((resolve, reject) => {
+                    const request = store.add(newAuction);
+                    request.onsuccess = function () {
+                        resolve(request.result);
+                    };
+                    request.onerror = function () {
+                        reject(request.error);
+                    };
+                });
+            }).then(auctionId => {
+                console.log(`拍卖品添加成功，ID: ${auctionId}`);
+                showToast('拍卖品添加成功', 'success');
+                hideAddAuctionForm();
+                // 刷新拍卖品列表
+                loadAuctions();
+            }).catch(error => {
+                console.error('添加拍卖品失败:', error);
+                showToast('添加拍卖品失败，请重试', 'danger');
+            });
+        }
+
+        // 显示我的拍卖
+        function showMyAuctions() {
+            if (!currentUser) {
+                showLoginModal();
+                return;
+            }
+
+            const myAuctions = auctions.filter(a => a.sellerId === currentUser.id);
+            renderAuctions(myAuctions);
+        }
+
+        // 显示我的出价
+        function showMyBids() {
+            if (!currentUser) {
+                showLoginModal();
+                return;
+            }
+
+            getAllByIndex('bids', 'bidderId', currentUser.id)
+                .then(bids => {
+                    // 获取这些出价对应的拍卖品ID
+                    const auctionIds = [...new Set(bids.map(bid => bid.auctionId))];
+                    // 筛选出这些拍卖品
+                    const myBidAuctions = auctions.filter(a => auctionIds.includes(a.id));
+                    renderAuctions(myBidAuctions);
+                })
+                .catch(error => {
+                    console.error('获取我的出价失败:', error);
+                    showToast('获取我的出价失败', 'danger');
+                });
+        }
+
+        // 删除拍卖品
+        function deleteAuction(auctionId) {
+            if (!currentUser) return;
+
+            const auction = auctions.find(a => a.id === auctionId);
+            if (!auction || auction.sellerId !== currentUser.id) {
+                showToast('没有权限删除此拍卖品', 'danger');
+                return;
+            }
+
+            if (!confirm('确定要删除这个拍卖品吗？此操作不可撤销。')) {
+                return;
+            }
+
+            // 先删除相关的出价
+            idbTransaction('bids', 'readwrite', store => {
+                return new Promise((resolve, reject) => {
+                    getAllByIndex('bids', 'auctionId', auctionId)
+                        .then(bids => {
+                            if (bids.length === 0) {
+                                resolve();
+                                return;
+                            }
+
+                            let deletedCount = 0;
+                            bids.forEach(bid => {
+                                const request = store.delete(bid.id);
+                                request.onsuccess = () => {
+                                    deletedCount++;
+                                    if (deletedCount === bids.length) {
+                                        resolve();
+                                    }
+                                };
+                                request.onerror = reject;
+                            });
+                        })
+                        .catch(reject);
+                });
+            }).then(() => {
+                // 再删除拍卖品
+                return idbTransaction('auctions', 'readwrite', store => {
+                    return new Promise((resolve, reject) => {
+                        const request = store.delete(auctionId);
+                        request.onsuccess = resolve;
+                        request.onerror = reject;
+                    });
+                });
+            }).then(() => {
+                console.log(`拍卖品 ${auctionId} 已删除`);
+                showToast('拍卖品已删除', 'success');
+                // 关闭模态框
+                const modal = bootstrap.Modal.getInstance(document.getElementById('auctionDetailModal'));
+                modal.hide();
+                // 刷新拍卖品列表
+                loadAuctions();
+            }).catch(error => {
+                console.error('删除拍卖品失败:', error);
+                showToast('删除拍卖品失败，请重试', 'danger');
+            });
+        }
+
+        // 显示所有拍卖品
+        function showAllAuctions() {
+            selectedCategory = null;
+            renderAuctions();
+            updateCategoryFilters();
+        }
+
+        // 更新统计信息
+        function updateStats() {
+            // 总拍卖数
+            document.getElementById('totalAuctions').textContent = auctions.length;
+
+            // 活跃拍卖数
+            const activeCount = auctions.filter(a => getTimeRemaining(a.endDate) !== "已结束").length;
+            document.getElementById('activeAuctions').textContent = activeCount;
+
+            // 获取总出价数和最高出价
+            idbTransaction('bids', 'readonly', store => {
+                return new Promise((resolve, reject) => {
+                    const request = store.getAll();
+                    request.onsuccess = function () {
+                        const allBids = request.result;
+                        // 总出价数
+                        document.getElementById('totalBids').textContent = allBids.length;
+
+                        // 最高出价
+                        if (allBids.length > 0) {
+                            const highest = allBids.reduce((max, bid) => (bid.amount > max.amount) ? bid : max, allBids[0]);
+                            document.getElementById('highestBid').textContent = `¥${highest.amount}`;
+                        } else {
+                            document.getElementById('highestBid').textContent = '¥0';
+                        }
+
+                        resolve();
+                    };
+                    request.onerror = reject;
+                });
+            }).catch(error => {
+                console.error('更新统计信息失败:', error);
+            });
+        }
+
+        // 显示登录模态框
+        function showLoginModal() {
+            const modal = new bootstrap.Modal(document.getElementById('loginModal'));
+            modal.show();
+        }
+
+        // 切换到注册表单
+        function switchToRegister() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('registerForm').style.display = 'block';
+        }
+
+        // 切换到登录表单
+        function switchToLogin() {
+            document.getElementById('registerForm').style.display = 'none';
+            document.getElementById('loginForm').style.display = 'block';
+        }
+
+        // 登录
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const rememberMe = document.getElementById('rememberMe').checked;
+
+            if (!username || !password) {
+                showToast('请输入用户名和密码', 'warning');
+                return;
+            }
+
+            // 查找用户
+            getByIndex('users', 'username', username)
+                .then(user => {
+                    if (!user) {
+                        showToast('用户名或密码错误', 'danger');
+                        return;
+                    }
+
+                    // 检查密码
+                    if (user.password !== password) {
+                        showToast('用户名或密码错误', 'danger');
+                        return;
+                    }
+
+                    // 登录成功
+                    currentUser = user;
+
+                    // 如果选择记住我，保存到localStorage
+                    if (rememberMe) {
+                        localStorage.setItem('rememberedUser', JSON.stringify({
+                            id: user.id,
+                            username: user.username
+                        }));
+                    } else {
+                        localStorage.removeItem('rememberedUser');
+                    }
+
+                    // 更新UI
+                    updateUserInterface();
+
+                    // 关闭模态框
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
+                    modal.hide();
+
+                    showToast(`欢迎回来，${user.username}`, 'success');
+
+                    // 加载用户相关数据
+                    loadNotifications();
+                    loadChatMessages();
+                })
+                .catch(error => {
+                    console.error('登录失败:', error);
+                    showToast('登录失败，请重试', 'danger');
+                });
+        }
+
+        // 注册
+        function register() {
+            const username = document.getElementById('regUsername').value;
+            const password = document.getElementById('regPassword').value;
+            const email = document.getElementById('regEmail').value;
+
+            if (!username || !password || !email) {
+                showToast('请填写完整信息', 'warning');
+                return;
+            }
+
+            // 检查用户名是否已存在
+            getByIndex('users', 'username', username)
+                .then(existingUser => {
+                    if (existingUser) {
+                        showToast('用户名已存在', 'danger');
+                        return Promise.reject('用户名已存在');
+                    }
+
+                    // 检查邮箱是否已存在
+                    return getByIndex('users', 'email', email);
+                })
+                .then(existingEmail => {
+                    if (existingEmail) {
+                        showToast('邮箱已被注册', 'danger');
+                        return Promise.reject('邮箱已被注册');
+                    }
+
+                    // 创建新用户
+                    const newUser = {
+                        username,
+                        password,
+                        email,
+                        createdAt: new Date().toISOString()
+                    };
+
+                    // 保存用户
+                    return idbTransaction('users', 'readwrite', store => {
+                        return new Promise((resolve, reject) => {
+                            const request = store.add(newUser);
+                            request.onsuccess = function () {
+                                resolve({ ...newUser, id: request.result });
+                            };
+                            request.onerror = reject;
+                        });
+                    });
+                })
+                .then(newUser => {
+                    console.log(`新用户注册成功: ${newUser.username}`);
+
+                    // 自动登录新用户
+                    currentUser = newUser;
+                    updateUserInterface();
+
+                    // 关闭模态框
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
+                    modal.hide();
+
+                    showToast('注册成功，欢迎加入', 'success');
+
+                    // 更新用户列表
+                    users.push(newUser);
+                })
+                .catch(error => {
+                    if (error !== '用户名已存在' && error !== '邮箱已被注册') {
+                        console.error('注册失败:', error);
+                        showToast('注册失败，请重试', 'danger');
+                    }
+                });
+        }
+
+        // 检查记住的登录状态
+        function checkRememberedLogin() {
+            const rememberedUser = localStorage.getItem('rememberedUser');
+            if (rememberedUser) {
+                const { id } = JSON.parse(rememberedUser);
+
+                // 查找用户
+                idbTransaction('users', 'readonly', store => {
+                    return new Promise((resolve, reject) => {
+                        const request = store.get(id);
+                        request.onsuccess = function () {
+                            resolve(request.result);
+                        };
+                        request.onerror = reject;
+                    });
+                }).then(user => {
+                    if (user) {
+                        currentUser = user;
+                        updateUserInterface();
+                        showToast(`自动登录成功，欢迎回来，${user.username}`, 'success');
+                    }
+                }).catch(error => {
+                    console.error('自动登录失败:', error);
+                    localStorage.removeItem('rememberedUser');
+                });
+            }
+        }
+
+        // 退出登录
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('rememberedUser');
+            updateUserInterface();
+            showAllAuctions();
+            showToast('已退出登录', 'info');
+        }
+
+        // 更新用户界面
+        function updateUserInterface() {
+            const loginButton = document.getElementById('loginButton');
+            const userMenuButton = document.getElementById('userMenuButton');
+            const addAuctionNavItem = document.getElementById('addAuctionNavItem');
+
+            if (currentUser) {
+                // 已登录状态
+                loginButton.style.display = 'none';
+                userMenuButton.style.display = 'block';
+                userMenuButton.innerHTML = `<i class="fas fa-user me-1"></i> ${currentUser.username}`;
+                addAuctionNavItem.style.display = 'block';
+            } else {
+                // 未登录状态
+                loginButton.style.display = 'block';
+                userMenuButton.style.display = 'none';
+                addAuctionNavItem.style.display = 'none';
+            }
+        }
+
+        // 显示通知
+        function showNotifications() {
+            if (!currentUser) {
+                showLoginModal();
+                return;
+            }
+
+            loadNotifications().then(() => {
+                const notificationsList = document.getElementById('notificationsList');
+                notificationsList.innerHTML = '';
+
+                if (notifications.length === 0) {
+                    notificationsList.innerHTML = '<p class="text-center text-muted">暂无通知</p>';
+                } else {
+                    // 按时间排序，最新的在前面
+                    notifications.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                    notifications.forEach(notification => {
+                        const item = document.createElement('a');
+                        item.href = '#';
+                        item.className = `list-group-item list-group-item-action ${!notification.read ? 'list-group-item-primary' : ''}`;
+                        item.innerHTML = `
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">${notification.title}</h6>
+                                <small>${formatDate(notification.timestamp)}</small>
+                            </div>
+                            <p class="mb-1">${notification.message}</p>
+                        `;
+
+                        item.addEventListener('click', function (e) {
+                            e.preventDefault();
+                            // 标记为已读
+                            if (!notification.read) {
+                                markAsRead(notification.id);
+                                item.classList.remove('list-group-item-primary');
+                            }
+
+                            // 如果是出价通知，跳转到相应的拍卖品详情
+                            if (notification.type === 'bid' && notification.relatedId) {
+                                const modal = bootstrap.Modal.getInstance(document.getElementById('notificationsModal'));
+                                modal.hide();
+                                setTimeout(() => showAuctionDetails(notification.relatedId), 300);
+                            }
+                        });
+
+                        notificationsList.appendChild(item);
+                    });
+                }
+
+                // 显示模态框
+                const modal = new bootstrap.Modal(document.getElementById('notificationsModal'));
+                modal.show();
+            });
+        }
+
+        // 加载通知
+        function loadNotifications() {
+            if (!currentUser) return Promise.resolve();
+
+            return getAllByIndex('notifications', 'recipientId', currentUser.id)
+                .then(notes => {
+                    notifications = notes;
+                    return notifications;
+                })
+                .catch(error => {
+                    console.error('加载通知失败:', error);
+                    return [];
+                });
+        }
+
+        // 标记通知为已读
+        function markAsRead(notificationId) {
+            return idbTransaction('notifications', 'readwrite', store => {
+                return new Promise((resolve, reject) => {
+                    const request = store.get(notificationId);
+                    request.onsuccess = function () {
+                        const notification = request.result;
+                        if (notification) {
+                            notification.read = true;
+                            const updateRequest = store.put(notification);
+                            updateRequest.onsuccess = resolve;
+                            updateRequest.onerror = reject;
+                        } else {
+                            resolve();
+                        }
+                    };
+                    request.onerror = reject;
+                });
+            }).then(() => {
+                // 更新本地通知列表
+                const index = notifications.findIndex(n => n.id === notificationId);
+                if (index !== -1) {
+                    notifications[index].read = true;
+                }
+            }).catch(error => {
+                console.error(`标记通知 ${notificationId} 为已读失败:`, error);
+            });
+        }
+
+        // 全部标记为已读
+        function markAllAsRead() {
+            if (!currentUser || notifications.length === 0) return;
+
+            const unreadNotifications = notifications.filter(n => !n.read);
+            if (unreadNotifications.length === 0) return;
+
+            idbTransaction('notifications', 'readwrite', store => {
+                return new Promise((resolve, reject) => {
+                    let updatedCount = 0;
+
+                    unreadNotifications.forEach(notification => {
+                        notification.read = true;
+                        const request = store.put(notification);
+                        request.onsuccess = () => {
+                            updatedCount++;
+                            if (updatedCount === unreadNotifications.length) {
+                                resolve();
+                            }
+                        };
+                        request.onerror = reject;
+                    });
+                });
+            }).then(() => {
+                // 更新本地通知列表
+                notifications.forEach(n => n.read = true);
+                // 更新UI
+                showNotifications();
+                showToast('全部通知已标记为已读', 'success');
+            }).catch(error => {
+                console.error('标记全部为已读失败:', error);
+                showToast('操作失败，请重试', 'danger');
+            });
+        }
+
+        // 显示提示消息
+        function showToast(message, type = 'info') {
+            const toastContainer = document.createElement('div');
+            toastContainer.className = `toast notification bg-${type} text-white`;
+            toastContainer.setAttribute('role', 'alert');
+            toastContainer.setAttribute('aria-live', 'assertive');
+            toastContainer.setAttribute('aria-atomic', 'true');
+            toastContainer.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            `;
+
+            document.body.appendChild(toastContainer);
+
+            const toast = new bootstrap.Toast(toastContainer);
+            toast.show();
+
+            // 3秒后自动移除
+            setTimeout(() => {
+                toastContainer.remove();
+            }, 3000);
+        }
+
+        // 切换聊天室显示/隐藏
+        function toggleChat() {
+            if (!currentUser) {
+                showLoginModal();
+                return;
+            }
+
+            const chatContainer = document.getElementById('chatContainer');
+            chatOpen = !chatOpen;
+
+            if (chatOpen) {
+                chatContainer.style.display = 'block';
+                // 滚动到底部
+                const messagesContainer = document.getElementById('chatMessages');
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                // 标记未读消息为已读
+                markChatMentionsAsRead();
+            } else {
+                chatContainer.style.display = 'none';
+            }
+        }
+
+        // 加载聊天消息
+        function loadChatMessages() {
+            if (!currentUser) return Promise.resolve();
+
+            return idbTransaction('chat_messages', 'readonly', store => {
+                return new Promise((resolve, reject) => {
+                    // 确保timestamp索引存在
+                    if (!indexExists(store, 'timestamp')) {
+                        reject(new Error('timestamp索引不存在'));
+                        return;
+                    }
+
+                    const index = store.index('timestamp');
+                    const request = index.openCursor(null, 'next'); // 按时间升序
+                    const messages = [];
+
+                    request.onsuccess = function (event) {
+                        const cursor = event.target.result;
+                        if (cursor) {
+                            messages.push(cursor.value);
+                            cursor.continue();
+                        } else {
+                            chatMessages = messages;
+                            renderChatMessages();
+                            updateUnreadChatCount();
+                            resolve(messages);
+                        }
+                    };
+
+                    request.onerror = reject;
+                });
+            }).catch(error => {
+                console.error('加载聊天消息失败:', error);
+                return [];
+            });
+        }
+
+        // 渲染聊天消息
+        function renderChatMessages() {
+            if (!currentUser) return;
+
+            const container = document.getElementById('chatMessages');
+            container.innerHTML = '';
+
+            chatMessages.forEach(message => {
+                const isSent = message.senderId === currentUser.id;
+                const sender = users.find(u => u.id === message.senderId) || { username: '未知用户' };
+
+                // 检查是否有回复
+                let replyHtml = '';
+                if (message.replyTo) {
+                    const replyToMessage = chatMessages.find(m => m.id === message.replyTo);
+                    if (replyToMessage) {
+                        const replyToSender = users.find(u => u.id === replyToMessage.senderId) || { username: '未知用户' };
+                        replyHtml = `<div class="reply-indicator">回复 @${replyToSender.username}: ${replyToMessage.content.substring(0, 20)}${replyToMessage.content.length > 20 ? '...' : ''}</div>`;
+                    }
+                }
+
+                // 处理@提及
+                let content = message.content;
+                users.forEach(user => {
+                    if (content.includes(`@${user.username}`)) {
+                        const className = user.id === currentUser.id ? 'mentioned' : '';
+                        content = content.replace(`@${user.username}`, `<span class="${className}">@${user.username}</span>`);
+                    }
+                });
+
+                const messageElement = document.createElement('div');
+                messageElement.className = `chat-message ${isSent ? 'sent' : 'received'}`;
+                messageElement.innerHTML = `
+                    ${replyHtml}
+                    <div class="message-content">
+                        <strong>${sender.username}</strong><br>
+                        ${content}
+                    </div>
+                    <small class="text-muted">${formatDate(message.timestamp)}</small>
+                `;
+
+                // 添加点击事件用于回复
+                messageElement.addEventListener('click', function () {
+                    replyToMessageId = message.id;
+                    document.getElementById('chatMessageInput').placeholder = `回复 @${sender.username}...`;
+                    document.getElementById('chatMessageInput').focus();
+                });
+
+                container.appendChild(messageElement);
+            });
+
+            // 如果聊天窗口是打开的，滚动到底部
+            if (chatOpen) {
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+
+        // 发送聊天消息
+        function sendChatMessage() {
+            if (!currentUser) {
+                showLoginModal();
+                return;
+            }
+
+            const input = document.getElementById('chatMessageInput');
+            const content = input.value.trim();
+
+            if (!content) return;
+
+            // 创建新消息
+            const newMessage = {
+                senderId: currentUser.id,
+                content: content,
+                timestamp: new Date().toISOString(),
+                replyTo: replyToMessageId // 添加回复引用
+            };
+
+            // 保存消息
+            idbTransaction('chat_messages', 'readwrite', store => {
+                return new Promise((resolve, reject) => {
+                    const request = store.add(newMessage);
+                    request.onsuccess = function () {
+                        resolve({ ...newMessage, id: request.result });
+                    };
+                    request.onerror = reject;
+                });
+            }).then(savedMessage => {
+                // 检查消息中是否有@提及
+                const mentions = [];
+                users.forEach(user => {
+                    if (user.id !== currentUser.id && content.includes(`@${user.username}`)) {
+                        mentions.push(user.id);
+                    }
+                });
+
+                // 保存提及记录
+                if (mentions.length > 0) {
+                    return idbTransaction('chat_mentions', 'readwrite', store => {
+                        return new Promise((resolve, reject) => {
+                            let addedCount = 0;
+                            mentions.forEach(userId => {
+                                const mention = {
+                                    messageId: savedMessage.id,
+                                    userId,
+                                    read: false,
+                                    timestamp: new Date().toISOString()
+                                };
+
+                                const request = store.add(mention);
+                                request.onsuccess = () => {
+                                    addedCount++;
+                                    if (addedCount === mentions.length) {
+                                        resolve();
+                                    }
+                                };
+                                request.onerror = reject;
+                            });
+                        });
+                    });
+                }
+            }).then(() => {
+                // 重置输入
+                input.value = '';
+                replyToMessageId = null;
+                input.placeholder = "输入消息... @用户可以提及某人，回复消息请点击消息";
+
+                // 重新加载消息
+                loadChatMessages();
+            }).catch(error => {
+                console.error('发送消息失败:', error);
+                showToast('发送消息失败，请重试', 'danger');
+            });
+        }
+
+        // 更新未读聊天提及计数
+        function updateUnreadChatCount() {
+            if (!currentUser) return;
+
+            getAllByIndex('chat_mentions', 'userId', currentUser.id)
+                .then(mentions => {
+                    const unreadCount = mentions.filter(m => !m.read).length;
+                    const countElement = document.getElementById('chatUnreadCount');
+
+                    if (unreadCount > 0) {
+                        countElement.textContent = unreadCount;
+                        countElement.style.display = 'flex';
+                    } else {
+                        countElement.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('更新未读计数失败:', error);
+                });
+        }
+
+        // 标记聊天提及为已读
+        function markChatMentionsAsRead() {
+            if (!currentUser) return;
+
+            getAllByIndex('chat_mentions', 'userId', currentUser.id)
+                .then(mentions => {
+                    const unreadMentions = mentions.filter(m => !m.read);
+                    if (unreadMentions.length === 0) return;
+
+                    return idbTransaction('chat_mentions', 'readwrite', store => {
+                        return new Promise((resolve, reject) => {
+                            let updatedCount = 0;
+                            unreadMentions.forEach(mention => {
+                                mention.read = true;
+                                const request = store.put(mention);
+                                request.onsuccess = () => {
+                                    updatedCount++;
+                                    if (updatedCount === unreadMentions.length) {
+                                        resolve();
+                                    }
+                                };
+                                request.onerror = reject;
+                            });
+                        });
+                    });
+                })
+                .then(() => {
+                    updateUnreadChatCount();
+                })
+                .catch(error => {
+                    console.error('标记聊天提及为已读失败:', error);
+                });
+        }
+    </script>
+</body>
+
+</html>
